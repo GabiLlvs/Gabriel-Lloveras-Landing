@@ -1,28 +1,17 @@
 export type Section = {
-  id: string;
+  id: "session" | "about" | "experience" | "projects" | "stack" | "education" | "contact";
   command: string;
-  label: string;
   file: string;
 };
 
 export const sections = [
-  { id: "session", command: "whoami", label: "Inicio", file: "~" },
-  { id: "about", command: "about", label: "Perfil", file: "about.md" },
-  {
-    id: "experience",
-    command: "experience",
-    label: "Experiencia",
-    file: "experience.log",
-  },
-  { id: "projects", command: "projects", label: "Proyectos", file: "projects/" },
-  { id: "stack", command: "stack", label: "Tecnologías", file: "stack.json" },
-  {
-    id: "education",
-    command: "education",
-    label: "Formación",
-    file: "education.md",
-  },
-  { id: "contact", command: "contact", label: "Contacto", file: "contact" },
+  { id: "session", command: "whoami", file: "~" },
+  { id: "about", command: "about", file: "about.md" },
+  { id: "experience", command: "experience", file: "experience.log" },
+  { id: "projects", command: "projects", file: "projects/" },
+  { id: "stack", command: "stack", file: "stack.json" },
+  { id: "education", command: "education", file: "education.md" },
+  { id: "contact", command: "contact", file: "contact" },
 ] as const satisfies readonly Section[];
 
 export type SectionId = (typeof sections)[number]["id"];

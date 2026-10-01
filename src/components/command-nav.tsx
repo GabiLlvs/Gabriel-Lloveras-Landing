@@ -1,6 +1,7 @@
 "use client";
 
 import { sections } from "@/content/navigation";
+import { useI18n } from "@/components/locale";
 
 type CommandNavProps = {
   active: string;
@@ -8,8 +9,10 @@ type CommandNavProps = {
 };
 
 export function CommandNav({ active, onSelect }: CommandNavProps) {
+  const { m } = useI18n();
+
   return (
-    <nav className="command-nav" aria-label="Secciones">
+    <nav className="command-nav" aria-label={m.nav}>
       <p className="nav-kicker">session</p>
       <ul className="nav-list">
         {sections.map((section) => {
@@ -40,7 +43,7 @@ export function CommandNav({ active, onSelect }: CommandNavProps) {
                   </span>
                   {section.command}
                 </span>
-                <span className="nav-label">{section.label}</span>
+                <span className="nav-label">{m.sections[section.id]}</span>
               </a>
             </li>
           );

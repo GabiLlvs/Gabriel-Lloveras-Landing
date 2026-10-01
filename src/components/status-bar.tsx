@@ -1,5 +1,6 @@
 import { site } from "@/content/site";
-import { ThemeToggle } from "@/components/theme";
+import { LanguageSwitch } from "@/components/locale";
+import { ThemeSlider } from "@/components/theme";
 
 export function StatusBar() {
   return (
@@ -12,7 +13,8 @@ export function StatusBar() {
         <p className="status-path">~/session</p>
         <div className="status-end">
           <p className="status-loc">{site.locationShort}</p>
-          <ThemeToggle />
+          <LanguageSwitch />
+          <ThemeSlider />
         </div>
       </div>
     </header>

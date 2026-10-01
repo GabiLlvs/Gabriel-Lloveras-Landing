@@ -5,6 +5,7 @@ import { CommandNav } from "@/components/command-nav";
 import { StatusBar } from "@/components/status-bar";
 import { Terminal, type LogItem } from "@/components/terminal";
 import { site } from "@/content/site";
+import { useI18n } from "@/components/locale";
 import { resolveCommand } from "@/lib/commands";
 
 type ShellProps = {
@@ -12,6 +13,7 @@ type ShellProps = {
 };
 
 export function Shell({ children }: ShellProps) {
+  const { locale, m } = useI18n();
   const [log, setLog] = useState<LogItem[]>([]);
   const [active, setActive] = useState("session");
   const seq = useRef(0);
@@ -21,7 +23,7 @@ export function Shell({ children }: ShellProps) {
     const trimmed = raw.trim();
     if (!trimmed) return;
 
-    const result = resolveCommand(trimmed);
+    const result = resolveCommand(trimmed, locale);
     if (result.clear) {
       setLog([]);
       return;
@@ -66,7 +68,7 @@ export function Shell({ children }: ShellProps) {
     window.setTimeout(() => {
       lock.current = false;
     }, 900);
-  }, []);
+  }, [locale]);
 
   const select = useCallback(
     (command: string) => {
@@ -113,7 +115,7 @@ export function Shell({ children }: ShellProps) {
   return (
     <>
       <a className="skip" href="#contenido">
-        Saltar al contenido
+        {m.skip}
       </a>
       <StatusBar />
       <div className="workspace">

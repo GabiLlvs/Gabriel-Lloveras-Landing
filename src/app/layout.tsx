@@ -1,7 +1,10 @@
 import type { Metadata, Viewport } from "next";
 import Script from "next/script";
 import { Geist, Geist_Mono } from "next/font/google";
-import { site, themeScript } from "@/content/site";
+import { site } from "@/content/site";
+import { themeScript } from "@/lib/theme-mix";
+import { readLocale } from "@/lib/request-locale";
+import { LocaleProvider } from "@/components/locale";
 import { ThemeSync } from "@/components/theme";
 import "./globals.css";
 
@@ -19,35 +22,40 @@ const mono = Geist_Mono({
 
 const metadataBase = site.url ? new URL(site.url) : undefined;
 
-export const metadata: Metadata = {
-  metadataBase,
-  title: {
-    default: site.title,
-    template: `%s · ${site.name}`,
-  },
-  description: site.description,
-  applicationName: site.name,
-  authors: [{ name: site.name, url: site.linkedin }],
-  creator: site.name,
-  alternates: site.url ? { canonical: "/" } : undefined,
-  openGraph: {
-    title: site.title,
-    description: site.description,
-    type: "website",
-    locale: "es_AR",
-    siteName: site.name,
-    url: site.url || undefined,
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: site.title,
-    description: site.description,
-  },
-  robots: {
-    index: true,
-    follow: true,
-  },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const locale = await readLocale();
+  const description = site.description[locale];
+
+  return {
+    metadataBase,
+    title: {
+      default: site.title,
+      template: `%s · ${site.name}`,
+    },
+    description,
+    applicationName: site.name,
+    authors: [{ name: site.name, url: site.linkedin }],
+    creator: site.name,
+    alternates: site.url ? { canonical: "/" } : undefined,
+    openGraph: {
+      title: site.title,
+      description,
+      type: "website",
+      locale: locale === "en" ? "en_US" : "es_AR",
+      siteName: site.name,
+      url: site.url || undefined,
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: site.title,
+      description,
+    },
+    robots: {
+      index: true,
+      follow: true,
+    },
+  };
+}
 
 export const viewport: Viewport = {
   themeColor: [
@@ -76,10 +84,12 @@ const person = {
   knowsLanguage: ["es", "en"],
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default async function RootLayout({ children }: LayoutProps<"/">) {
+  const locale = await readLocale();
+
   return (
     <html
-      lang="es"
+      lang={locale}
       className={`${sans.variable} ${mono.variable}`}
       data-theme="dark"
       suppressHydrationWarning
@@ -93,7 +103,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(person) }}
         />
-        {children}
+        <LocaleProvider initial={locale}>{children}</LocaleProvider>
       </body>
     </html>
   );

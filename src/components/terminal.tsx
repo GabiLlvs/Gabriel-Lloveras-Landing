@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState, type KeyboardEvent } from "react";
-import { helpEntries, completeCommand } from "@/lib/commands";
+import { completeCommand } from "@/lib/commands";
+import { useI18n } from "@/components/locale";
 import { profile } from "@/content/profile";
 import { site } from "@/content/site";
 
@@ -25,6 +26,8 @@ function Portrait() {
 }
 
 export function Terminal({ log, onExecute }: TerminalProps) {
+  const { locale, m } = useI18n();
+  const copy = profile[locale];
   const [value, setValue] = useState("");
   const [history, setHistory] = useState<string[]>([]);
   const [cursor, setCursor] = useState(-1);
@@ -118,7 +121,7 @@ export function Terminal({ log, onExecute }: TerminalProps) {
                 {site.name}
               </h1>
               <p className="hero-role">{site.role}</p>
-              {profile.lead.map((line) => (
+              {copy.lead.map((line) => (
                 <p key={line} className="hero-lead">
                   {line}
                 </p>
@@ -165,16 +168,16 @@ export function Terminal({ log, onExecute }: TerminalProps) {
           role="log"
           aria-live="polite"
           aria-relevant="additions"
-          aria-label="Salida de la terminal"
+          aria-label={m.terminalOutput}
           data-empty={log.length === 0}
         >
           {log.map((line) => {
             if (line.kind === "help") {
               return (
                 <div key={line.id} className="help">
-                  <p>Comandos</p>
+                  <p>{m.helpTitle}</p>
                   <ul>
-                    {helpEntries.map((entry) => (
+                    {m.help.map((entry) => (
                       <li key={entry.command}>
                         {entry.run ? (
                           <button
@@ -193,7 +196,7 @@ export function Terminal({ log, onExecute }: TerminalProps) {
                     ))}
                   </ul>
                   <p className="help-note">
-                    Las mismas secciones están en la navegación, sin usar el teclado.
+                    {m.helpNote}
                   </p>
                 </div>
               );
@@ -220,14 +223,14 @@ export function Terminal({ log, onExecute }: TerminalProps) {
 
         <form
           className="term-form"
-          aria-label="Terminal de comandos"
+          aria-label={m.terminalForm}
           onSubmit={(event) => {
             event.preventDefault();
             submit(value);
           }}
         >
           <label htmlFor="terminal-command" className="sr-only">
-            Escribir un comando
+            {m.commandInput}
           </label>
           <div className="term-entry">
             <span className="prompt-mark" aria-hidden="true">
@@ -257,22 +260,22 @@ export function Terminal({ log, onExecute }: TerminalProps) {
             </span>
           </div>
           <button type="submit" className="sr-only">
-            Ejecutar comando
+            {m.run}
           </button>
         </form>
         <p className="term-hint">
           <span className="hint-group">
             <kbd>↑</kbd>
             <kbd>↓</kbd>
-            historial
+            {m.history}
           </span>
           <span className="hint-group">
             <kbd>tab</kbd>
-            completar
+            {m.complete}
           </span>
           <span className="hint-group">
             <kbd>help</kbd>
-            comandos
+            {m.commands}
           </span>
         </p>
       </div>

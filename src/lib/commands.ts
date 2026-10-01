@@ -1,3 +1,5 @@
+import type { Locale } from "@/content/locale";
+import { messages } from "@/content/messages";
 import { sections } from "@/content/navigation";
 import { projects } from "@/content/projects";
 import { site } from "@/content/site";
@@ -44,25 +46,12 @@ const canonical = [
   "cd",
 ] as const;
 
-export const helpEntries: { command: string; hint: string; run?: string }[] = [
-  { command: "help", hint: "muestra esta ayuda", run: "help" },
-  { command: "whoami", hint: "nombre y rol", run: "whoami" },
-  { command: "about", hint: "perfil profesional", run: "about" },
-  { command: "experience", hint: "experiencia laboral", run: "experience" },
-  { command: "projects", hint: "proyectos", run: "projects" },
-  { command: "stack", hint: "tecnologías", run: "stack" },
-  { command: "education", hint: "formación", run: "education" },
-  { command: "contact", hint: "email y LinkedIn", run: "contact" },
-  { command: "ls", hint: "lista las secciones", run: "ls" },
-  { command: "open <slug>", hint: "abre un proyecto" },
-  { command: "clear", hint: "limpia esta salida", run: "clear" },
-];
-
-function notFound(token: string): CommandResult {
+function notFound(token: string, locale: Locale): CommandResult {
+  const copy = messages[locale];
   return {
     lines: [
-      { kind: "error", text: `command not found: ${token}` },
-      { kind: "text", text: 'Type "help" to see available commands.' },
+      { kind: "error", text: `${copy.notFound} ${token}` },
+      { kind: "text", text: copy.helpHint },
     ],
   };
 }
@@ -71,11 +60,11 @@ function row(key: string, value: string): CommandLine {
   return { kind: "text", text: `${key.padEnd(10, " ")}→ ${value}` };
 }
 
-function projectLines(): CommandLine[] {
+function projectLines(locale: Locale): CommandLine[] {
   if (projects.length === 0) {
     return [
       { kind: "text", text: "projects/" },
-      { kind: "text", text: "(vacío)" },
+      { kind: "text", text: messages[locale].projectsEmptyCmd },
     ];
   }
 
@@ -125,12 +114,13 @@ export function completeCommand(value: string): string | null {
   return null;
 }
 
-export function resolveCommand(raw: string): CommandResult {
+export function resolveCommand(raw: string, locale: Locale): CommandResult {
+  const copy = messages[locale];
   const trimmed = raw.trim().replace(/\s+/g, " ");
   const withoutCd = trimmed.replace(/^cd\s+/i, "");
   const [head, ...args] = withoutCd.split(" ");
 
-  if (!head) return notFound(trimmed);
+  if (!head) return notFound(trimmed, locale);
 
   const command = aliases[head.toLowerCase()] ?? head.toLowerCase();
   const arg = args.join(" ");
@@ -172,7 +162,7 @@ export function resolveCommand(raw: string): CommandResult {
       return {
         active: "projects",
         scrollTo: "projects",
-        lines: projectLines(),
+        lines: projectLines(locale),
       };
     case "contact":
       return {
@@ -195,12 +185,10 @@ export function resolveCommand(raw: string): CommandResult {
         const available = projects.map((item) => item.slug).join(", ");
         return {
           lines: [
-            { kind: "error", text: `no such project: ${arg}` },
+            { kind: "error", text: `${copy.noProject} ${arg}` },
             {
               kind: "text",
-              text: available
-                ? `available: ${available}`
-                : "projects/ is empty",
+              text: available ? `${copy.available} ${available}` : copy.projectsEmptyLong,
             },
           ],
         };
@@ -213,6 +201,6 @@ export function resolveCommand(raw: string): CommandResult {
       };
     }
     default:
-      return notFound(head);
+      return notFound(head, locale);
   }
 }

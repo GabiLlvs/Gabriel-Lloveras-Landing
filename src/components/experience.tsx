@@ -1,21 +1,26 @@
+"use client";
+
 import { experience } from "@/content/experience";
 import { SectionFrame } from "@/components/section-frame";
+import { useI18n } from "@/components/locale";
 
 export function Experience() {
+  const { locale, m } = useI18n();
+
   return (
     <SectionFrame
       id="experience"
       command="experience"
       file="experience.log"
-      title="Experiencia"
+      title={m.sections.experience}
     >
       <div className="log">
-        {experience.map((job) => (
+        {experience[locale].map((job) => (
           <article key={job.org} className="job">
             <p className="job-period">{job.period}</p>
             <h3>{job.org}</h3>
             <p className="job-role">{job.role}</p>
-            <ul className="tags" aria-label={`Tecnologías en ${job.org}`}>
+            <ul className="tags" aria-label={`${m.techAt} ${job.org}`}>
               {job.stack.map((item) => (
                 <li key={item}>{item}</li>
               ))}

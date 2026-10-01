@@ -1,14 +1,14 @@
+"use client";
+
 import { stack } from "@/content/stack";
 import { SectionFrame } from "@/components/section-frame";
+import { useI18n } from "@/components/locale";
 
 export function Stack() {
+  const { m } = useI18n();
+
   return (
-    <SectionFrame
-      id="stack"
-      command="stack"
-      file="stack.json"
-      title="Tecnologías"
-    >
+    <SectionFrame id="stack" command="stack" file="stack.json" title={m.sections.stack}>
       <p className="cmd-line">
         <span className="prompt-mark" aria-hidden="true">
           $

@@ -1,12 +1,15 @@
+"use client";
+
 import { site } from "@/content/site";
 import { SectionFrame } from "@/components/section-frame";
+import { useI18n } from "@/components/locale";
 
 export function Contact() {
+  const { m } = useI18n();
+
   return (
-    <SectionFrame id="contact" command="contact" file="contact" title="Contacto">
-      <p className="prose contact-lead">
-        Si estás armando un equipo o querés hablar de un proyecto, escribime.
-      </p>
+    <SectionFrame id="contact" command="contact" file="contact" title={m.sections.contact}>
+      <p className="prose contact-lead">{m.contactLead}</p>
       <dl className="contact-list">
         <div className="contact-row">
           <dt>email</dt>
@@ -25,12 +28,12 @@ export function Contact() {
             </span>
             <a href={site.linkedin} target="_blank" rel="noreferrer">
               {site.linkedinLabel}
-              <span className="sr-only"> (se abre en una pestaña nueva)</span>
+              <span className="sr-only"> {m.newTab}</span>
             </a>
           </dd>
         </div>
         <div className="contact-row">
-          <dt>ubicación</dt>
+          <dt>{m.location}</dt>
           <dd>
             <span className="contact-arrow" aria-hidden="true">
               →
@@ -40,7 +43,7 @@ export function Contact() {
         </div>
       </dl>
       <a className="cta" href={`mailto:${site.email}`}>
-        Escribir un email
+        {m.writeEmail}
       </a>
     </SectionFrame>
   );

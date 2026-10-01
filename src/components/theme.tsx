@@ -1,11 +1,14 @@
 "use client";
 
 import { useLayoutEffect, useSyncExternalStore } from "react";
-
-const THEME_KEY = "theme";
-const COLORS = { dark: "#070b12", light: "#e8eef7" } as const;
-
-type Theme = keyof typeof COLORS;
+import { useI18n } from "@/components/locale";
+import {
+  DARK_BG,
+  LIGHT_BG,
+  THEME_MIX_KEY,
+  clampMix,
+  mixHex,
+} from "@/lib/theme-mix";
 
 const listeners = new Set<() => void>();
 
@@ -18,39 +21,38 @@ function subscribe(listener: () => void) {
   return () => listeners.delete(listener);
 }
 
-function getSnapshot(): Theme {
-  return document.documentElement.dataset.theme === "light" ? "light" : "dark";
+function readMix() {
+  return clampMix(Number.parseFloat(document.documentElement.dataset.themeMix ?? "0"));
 }
 
-function getServerSnapshot(): Theme {
-  return "dark";
+function getSnapshot() {
+  return readMix();
 }
 
-function applyTheme(theme: Theme, persist: boolean) {
-  document.documentElement.dataset.theme = theme;
-  if (persist) localStorage.setItem(THEME_KEY, theme);
+function getServerSnapshot() {
+  return 0;
+}
+
+export function applyThemeMix(amount: number, persist: boolean) {
+  const mix = clampMix(amount);
+  const root = document.documentElement;
+  root.style.setProperty("--mix", String(mix));
+  root.dataset.themeMix = String(mix);
+  root.dataset.theme = mix >= 0.5 ? "light" : "dark";
+  if (persist) localStorage.setItem(THEME_MIX_KEY, String(mix));
+  const color = mixHex(DARK_BG, LIGHT_BG, mix);
   document.querySelectorAll('meta[name="theme-color"]').forEach((meta) => {
-    meta.setAttribute("content", COLORS[theme]);
+    meta.setAttribute("content", color);
   });
   emit();
 }
 
 export function ThemeSync() {
   useLayoutEffect(() => {
-    const stored = localStorage.getItem(THEME_KEY);
-    if (stored === "light" || stored === "dark") {
-      applyTheme(stored, false);
-    } else {
-      applyTheme(
-        window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark",
-        false,
-      );
-    }
-
     const media = window.matchMedia("(prefers-color-scheme: light)");
     const onChange = () => {
-      if (localStorage.getItem(THEME_KEY)) return;
-      applyTheme(media.matches ? "light" : "dark", false);
+      if (localStorage.getItem(THEME_MIX_KEY)) return;
+      applyThemeMix(media.matches ? 1 : 0, false);
     };
 
     media.addEventListener("change", onChange);
@@ -60,20 +62,22 @@ export function ThemeSync() {
   return null;
 }
 
-export function ThemeToggle() {
-  const theme = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
-  const isLight = theme === "light";
+export function ThemeSlider() {
+  const mix = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
+  const { m } = useI18n();
 
   return (
-    <button
-      type="button"
-      className="theme-toggle"
-      onClick={() => applyTheme(isLight ? "dark" : "light", true)}
-      aria-pressed={isLight}
-      aria-label={isLight ? "Activar modo oscuro" : "Activar modo claro"}
-    >
-      <span className="theme-toggle-key">theme</span>
-      <span>{theme}</span>
-    </button>
+    <label className="theme-slider">
+      <span className="sr-only">{m.theme}</span>
+      <input
+        className="theme-range"
+        type="range"
+        min={0}
+        max={1000}
+        step={1}
+        value={Math.round(mix * 1000)}
+        onChange={(event) => applyThemeMix(Number(event.target.value) / 1000, true)}
+      />
+    </label>
   );
 }

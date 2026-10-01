@@ -1,13 +1,18 @@
+"use client";
+
 import { projects } from "@/content/projects";
 import { SectionFrame } from "@/components/section-frame";
+import { useI18n } from "@/components/locale";
 
 export function Projects() {
+  const { m } = useI18n();
+
   return (
     <SectionFrame
       id="projects"
       command="projects"
       file="projects/"
-      title="Proyectos"
+      title={m.sections.projects}
     >
       <p className="cmd-line">
         <span className="prompt-mark" aria-hidden="true">
@@ -17,7 +22,7 @@ export function Projects() {
       </p>
 
       {projects.length === 0 ? (
-        <p className="empty">No hay repositorios en esta selección todavía.</p>
+        <p className="empty">{m.projectsEmpty}</p>
       ) : (
         <div className="repo-list">
           {projects.map((project, index) => (
@@ -35,7 +40,7 @@ export function Projects() {
                 <span className="repo-name">
                   <h3>{project.title}</h3>
                   {project.placeholder ? (
-                    <span className="badge">pendiente</span>
+                    <span className="badge">{m.pending}</span>
                   ) : null}
                 </span>
                 <span className="repo-slug">{project.slug}</span>
@@ -45,21 +50,21 @@ export function Projects() {
 
                 {project.problem ? (
                   <div className="repo-block">
-                    <h4>Problema</h4>
+                    <h4>{m.problem}</h4>
                     <p className="prose">{project.problem}</p>
                   </div>
                 ) : null}
 
                 {project.contribution ? (
                   <div className="repo-block">
-                    <h4>Qué hice</h4>
+                    <h4>{m.contribution}</h4>
                     <p className="prose">{project.contribution}</p>
                   </div>
                 ) : null}
 
                 {project.highlights && project.highlights.length > 0 ? (
                   <div className="repo-block">
-                    <h4>Características</h4>
+                    <h4>{m.features}</h4>
                     <ul className="repo-points">
                       {project.highlights.map((item) => (
                         <li key={item}>{item}</li>
@@ -69,7 +74,7 @@ export function Projects() {
                 ) : null}
 
                 {project.stack.length > 0 ? (
-                  <ul className="tags" aria-label={`Stack de ${project.title}`}>
+                  <ul className="tags" aria-label={`${m.stackOf} ${project.title}`}>
                     {project.stack.map((item) => (
                       <li key={item}>{item}</li>
                     ))}
@@ -100,7 +105,7 @@ export function Projects() {
                           {link.label}
                           <span className="sr-only">
                             {" "}
-                            (se abre en una pestaña nueva)
+                            {m.newTab}
                           </span>
                         </a>
                       </li>
