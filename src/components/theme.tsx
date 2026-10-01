@@ -62,22 +62,64 @@ export function ThemeSync() {
   return null;
 }
 
+let snapTimer = 0;
+let snapping = false;
+
+function settleTheme(amount: number) {
+  const root = document.documentElement;
+  snapping = true;
+  root.classList.add("is-snapping");
+  window.requestAnimationFrame(() => {
+    applyThemeMix(amount >= 0.5 ? 1 : 0, true);
+  });
+  window.clearTimeout(snapTimer);
+  snapTimer = window.setTimeout(() => {
+    snapping = false;
+    root.classList.remove("is-snapping");
+  }, 280);
+}
+
 export function ThemeSlider() {
   const mix = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
   const { m } = useI18n();
 
   return (
     <label className="theme-slider">
-      <span className="sr-only">{m.theme}</span>
+      <span className="theme-name">{m.themeName}</span>
+      <span className="theme-end">
+        <span className="theme-swatch is-dark" aria-hidden="true" />
+        {m.themeDark}
+      </span>
       <input
+        aria-label={m.theme}
         className="theme-range"
         type="range"
         min={0}
         max={1000}
         step={1}
         value={Math.round(mix * 1000)}
-        onChange={(event) => applyThemeMix(Number(event.target.value) / 1000, true)}
+        onPointerDown={() => document.documentElement.classList.remove("is-snapping")}
+        onChange={(event) => {
+          if (snapping) return;
+          applyThemeMix(Number(event.target.value) / 1000, false);
+        }}
+        onPointerUp={(event) => settleTheme(Number(event.currentTarget.value) / 1000)}
+        onPointerCancel={(event) => settleTheme(Number(event.currentTarget.value) / 1000)}
+        onKeyDown={(event) => {
+          if (event.key === "ArrowRight" || event.key === "ArrowUp" || event.key === "End") {
+            event.preventDefault();
+            settleTheme(1);
+          }
+          if (event.key === "ArrowLeft" || event.key === "ArrowDown" || event.key === "Home") {
+            event.preventDefault();
+            settleTheme(0);
+          }
+        }}
       />
+      <span className="theme-end">
+        <span className="theme-swatch is-light" aria-hidden="true" />
+        {m.themeLight}
+      </span>
     </label>
   );
 }

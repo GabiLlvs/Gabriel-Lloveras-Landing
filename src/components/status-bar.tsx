@@ -14,9 +14,9 @@ export function StatusBar() {
         <div className="status-end">
           <p className="status-loc">{site.locationShort}</p>
           <LanguageSwitch />
-          <ThemeSlider />
         </div>
       </div>
+      <ThemeSlider />
     </header>
   );
 }
