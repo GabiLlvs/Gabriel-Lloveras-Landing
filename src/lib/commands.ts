@@ -13,7 +13,6 @@ export type CommandResult = {
   clear?: boolean;
   scrollTo?: string;
   active?: string;
-  openDetails?: boolean;
   lines: CommandLine[];
 };
 
@@ -196,7 +195,6 @@ export function resolveCommand(raw: string, locale: Locale): CommandResult {
       return {
         active: "projects",
         scrollTo: `project-${project.slug}`,
-        openDetails: true,
         lines: [{ kind: "text", text: `→ projects/${project.slug}` }],
       };
     }

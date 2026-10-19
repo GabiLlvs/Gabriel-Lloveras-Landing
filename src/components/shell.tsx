@@ -25,7 +25,6 @@ const SECTION_IDS = [
 type PendingScroll = {
   destination: string;
   focus: boolean;
-  openDetails: boolean;
 };
 
 export function Shell({ children }: ShellProps) {
@@ -74,7 +73,6 @@ export function Shell({ children }: ShellProps) {
     pendingScroll.current = {
       destination,
       focus: Boolean(options?.focus),
-      openDetails: Boolean(result.openDetails),
     };
     if (result.active) setActive(result.active);
 
@@ -97,9 +95,6 @@ export function Shell({ children }: ShellProps) {
 
     const target = document.getElementById(pending.destination);
     if (!target) return;
-    if (pending.openDetails && target instanceof HTMLDetailsElement) {
-      target.open = true;
-    }
     const margin = Number.parseFloat(getComputedStyle(target).scrollMarginTop);
     const aligned =
       Number.isFinite(margin) && Math.abs(target.getBoundingClientRect().top - margin) <= 2;
@@ -178,7 +173,7 @@ export function Shell({ children }: ShellProps) {
       <a className="skip" href="#contenido">
         {m.skip}
       </a>
-      <StatusBar />
+      <StatusBar onExecute={execute} />
       <div className="workspace">
         <CommandNav active={active} onSelect={select} />
         <main id="contenido" className="main" tabIndex={-1}>

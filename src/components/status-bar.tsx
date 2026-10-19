@@ -1,8 +1,13 @@
 import { site } from "@/content/site";
 import { LanguageSwitch } from "@/components/locale";
-import { ThemeSlider } from "@/components/theme";
+import { ThemeToggle } from "@/components/theme";
+import { CommandInput } from "@/components/command-input";
 
-export function StatusBar() {
+export function StatusBar({
+  onExecute,
+}: {
+  onExecute: (command: string) => void;
+}) {
   return (
     <header className="status">
       <div className="status-inner">
@@ -11,12 +16,13 @@ export function StatusBar() {
           gabriel@portfolio
         </p>
         <p className="status-path">~/session</p>
+        <CommandInput onExecute={onExecute} />
         <div className="status-end">
           <p className="status-loc">{site.locationShort}</p>
+          <ThemeToggle />
           <LanguageSwitch />
         </div>
       </div>
-      <ThemeSlider />
     </header>
   );
 }

@@ -1,48 +1,34 @@
-export type ProjectImage = {
-  src: string;
-  alt: string;
-  width?: number;
-  height?: number;
-};
+import type { Locale } from "@/content/locale";
 
 export type ProjectLink = {
-  label: string;
+  label: Record<Locale, string>;
   href: string;
 };
 
-/**
- * Catálogo de proyectos. Agregá objetos a `projects`.
- * No completes datos que no existan: omití el campo.
- * Si una entrada todavía está incompleta, marcala con `placeholder: true`
- * para que la interfaz la señale como pendiente.
- *
- * Imágenes: guardalas en `public/projects/<slug>/` y referencialas como
- * `/projects/<slug>/01.png`.
- *
- * Ejemplo:
- * {
- *   slug: "mi-proyecto",
- *   title: "Nombre visible",
- *   summary: "Qué es, en una o dos frases.",
- *   problem: "Qué problema resolvía.",
- *   contribution: "Qué hiciste vos.",
- *   highlights: ["Característica real"],
- *   stack: ["React", "TypeScript", "Next.js"],
- *   images: [{ src: "/projects/mi-proyecto/01.png", alt: "Descripción de la captura" }],
- *   links: [{ label: "Repositorio", href: "https://github.com/..." }],
- * }
- */
 export type Project = {
   slug: string;
   title: string;
-  summary: string;
-  problem?: string;
-  contribution?: string;
-  highlights?: string[];
-  stack: string[];
-  images?: ProjectImage[];
-  links?: ProjectLink[];
-  placeholder?: boolean;
+  summary: Record<Locale, string>;
+  links: ProjectLink[];
 };
 
-export const projects: Project[] = [];
+export const projects: Project[] = [
+  {
+    slug: "charlie-bot",
+    title: "Charlie-bot",
+    summary: {
+      es: "Bot personal para WhatsApp que recibe fotos, GIFs y videos cortos y los devuelve como stickers WebP de hasta 512 × 512 px. Lo desarrollé con Node.js, Baileys, Sharp y FFmpeg, y preparé su despliegue con Docker.",
+      en: "A personal WhatsApp bot that receives photos, GIFs, and short videos and returns them as WebP stickers up to 512 × 512 px. I built it with Node.js, Baileys, Sharp, and FFmpeg, and prepared its Docker deployment.",
+    },
+    links: [
+      {
+        label: { es: "Ver landing", en: "View landing page" },
+        href: "https://charlie-bot-portfolio.vercel.app/",
+      },
+      {
+        label: { es: "Ver repositorio", en: "View repository" },
+        href: "https://github.com/GabiLlvs/Charlie-bot",
+      },
+    ],
+  },
+];

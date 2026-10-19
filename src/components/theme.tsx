@@ -63,63 +63,56 @@ export function ThemeSync() {
 }
 
 let snapTimer = 0;
-let snapping = false;
 
 function settleTheme(amount: number) {
   const root = document.documentElement;
-  snapping = true;
   root.classList.add("is-snapping");
   window.requestAnimationFrame(() => {
     applyThemeMix(amount >= 0.5 ? 1 : 0, true);
   });
   window.clearTimeout(snapTimer);
   snapTimer = window.setTimeout(() => {
-    snapping = false;
     root.classList.remove("is-snapping");
   }, 280);
 }
 
-export function ThemeSlider() {
+export function ThemeToggle() {
   const mix = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
   const { m } = useI18n();
+  const isLight = mix >= 0.5;
+  const label = isLight ? m.themeToggleToDark : m.themeToggleToLight;
 
   return (
-    <label className="theme-slider">
-      <span className="theme-name">{m.themeName}</span>
-      <span className="theme-end">
-        <span className="theme-swatch is-dark" aria-hidden="true" />
-        {m.themeDark}
-      </span>
-      <input
-        aria-label={m.theme}
-        className="theme-range"
-        type="range"
-        min={0}
-        max={1000}
-        step={1}
-        value={Math.round(mix * 1000)}
-        onPointerDown={() => document.documentElement.classList.remove("is-snapping")}
-        onChange={(event) => {
-          if (snapping) return;
-          applyThemeMix(Number(event.target.value) / 1000, false);
-        }}
-        onPointerUp={(event) => settleTheme(Number(event.currentTarget.value) / 1000)}
-        onPointerCancel={(event) => settleTheme(Number(event.currentTarget.value) / 1000)}
-        onKeyDown={(event) => {
-          if (event.key === "ArrowRight" || event.key === "ArrowUp" || event.key === "End") {
-            event.preventDefault();
-            settleTheme(1);
-          }
-          if (event.key === "ArrowLeft" || event.key === "ArrowDown" || event.key === "Home") {
-            event.preventDefault();
-            settleTheme(0);
-          }
-        }}
-      />
-      <span className="theme-end">
-        <span className="theme-swatch is-light" aria-hidden="true" />
-        {m.themeLight}
-      </span>
-    </label>
+    <button
+      type="button"
+      className="theme-toggle"
+      aria-label={label}
+      title={label}
+      onClick={() => settleTheme(isLight ? 0 : 1)}
+    >
+      {isLight ? (
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path
+            d="M20.2 15.4A8 8 0 0 1 8.6 3.8 8.5 8.5 0 1 0 20.2 15.4Z"
+            fill="none"
+            stroke="currentColor"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth="1.6"
+          />
+        </svg>
+      ) : (
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <circle cx="12" cy="12" r="3.5" fill="none" stroke="currentColor" strokeWidth="1.6" />
+          <path
+            d="M12 2.5v2m0 15v2m9.5-9.5h-2m-15 0h-2m16.2-6.7-1.4 1.4M6.7 17.3l-1.4 1.4m13.4 0-1.4-1.4M6.7 6.7 5.3 5.3"
+            fill="none"
+            stroke="currentColor"
+            strokeLinecap="round"
+            strokeWidth="1.6"
+          />
+        </svg>
+      )}
+    </button>
   );
 }

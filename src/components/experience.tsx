@@ -16,7 +16,7 @@ export function Experience() {
     >
       <div className="log">
         {experience[locale].map((job) => (
-          <article key={job.org} className="job">
+          <article key={`${job.org}-${job.period}`} className="job">
             <p className="job-period">{job.period}</p>
             <h3>{job.org}</h3>
             <p className="job-role">{job.role}</p>
@@ -26,6 +26,15 @@ export function Experience() {
               ))}
             </ul>
             <p className="prose">{job.summary}</p>
+            {job.projects ? (
+              <ul className="job-projects">
+                {job.projects.map((project) => (
+                  <li key={project.name}>
+                    <strong>{project.name}:</strong> {project.summary}
+                  </li>
+                ))}
+              </ul>
+            ) : null}
             {job.context ? <p className="job-context">{job.context}</p> : null}
           </article>
         ))}
