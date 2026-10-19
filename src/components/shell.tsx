@@ -33,6 +33,7 @@ export function Shell({ children }: ShellProps) {
   const [active, setActive] = useState("session");
   const seq = useRef(0);
   const lock = useRef(false);
+  const explicitSelection = useRef(false);
   const pendingScroll = useRef<PendingScroll | null>(null);
   const scrollGeneration = useRef(0);
 
@@ -70,6 +71,7 @@ export function Shell({ children }: ShellProps) {
     scrollGeneration.current += 1;
     const generation = scrollGeneration.current;
     lock.current = true;
+    explicitSelection.current = true;
     pendingScroll.current = {
       destination,
       focus: Boolean(options?.focus),
@@ -82,7 +84,6 @@ export function Shell({ children }: ShellProps) {
       window.clearTimeout(timer);
       if (scrollGeneration.current !== generation || !lock.current) return;
       lock.current = false;
-      window.dispatchEvent(new Event("scroll"));
     };
     window.addEventListener("scrollend", release);
     timer = window.setTimeout(release, 3000);
@@ -94,7 +95,11 @@ export function Shell({ children }: ShellProps) {
     pendingScroll.current = null;
 
     const target = document.getElementById(pending.destination);
-    if (!target) return;
+    if (!target) {
+      lock.current = false;
+      explicitSelection.current = false;
+      return;
+    }
     const targetStyle = getComputedStyle(target);
     const scrollPadding = Number.parseFloat(
       getComputedStyle(document.documentElement).scrollPaddingTop,
@@ -122,55 +127,68 @@ export function Shell({ children }: ShellProps) {
 
   useEffect(() => {
     const update = () => {
-      if (lock.current) return;
+      if (lock.current || explicitSelection.current) return;
 
       const header = document.querySelector("header");
       const headerBottom = header?.getBoundingClientRect().bottom ?? 0;
-      const viewBottom = window.innerHeight;
       const line = headerBottom + 28;
       const items = SECTION_IDS.flatMap((id) => {
         const node = document.getElementById(id);
         if (!node) return [];
         const rect = node.getBoundingClientRect();
-        const visible = Math.max(
-          0,
-          Math.min(rect.bottom, viewBottom) - Math.max(rect.top, headerBottom),
-        );
-        return [{ id, top: rect.top, visible }];
+        return [{ id, top: rect.top }];
       });
       if (items.length === 0) return;
-
-      const remain = document.documentElement.scrollHeight - window.scrollY - viewBottom;
-      const last = items[items.length - 1];
-      if (last && remain <= 72) {
-        setActive((previous) => (previous === last.id ? previous : last.id));
-        return;
-      }
 
       let current = items[0].id;
       for (const item of items) {
         if (item.top <= line) current = item.id;
       }
 
-      if (
-        last &&
-        last.id !== current &&
-        last.top > headerBottom &&
-        last.top < viewBottom * 0.62 &&
-        last.visible > (items.find((item) => item.id === current)?.visible ?? 0)
-      ) {
-        current = last.id;
-      }
-
       setActive((previous) => (previous === current ? previous : current));
+    };
+
+    const resumeTracking = (event: Event) => {
+      if (event.type === "keydown") {
+        const keyEvent = event as KeyboardEvent;
+        if (
+          !["ArrowDown", "ArrowUp", "PageDown", "PageUp", "Home", "End", " "].includes(
+            keyEvent.key,
+          )
+        ) {
+          return;
+        }
+        const target = keyEvent.target;
+        if (
+          target instanceof HTMLElement &&
+          (target.isContentEditable ||
+            target.closest("input, textarea, select, button, a, [contenteditable='true']"))
+        ) {
+          return;
+        }
+      }
+      if (event.type === "pointerdown") {
+        const pointer = event as PointerEvent;
+        if (pointer.clientX < window.innerWidth - 16 && pointer.clientY < window.innerHeight - 16) {
+          return;
+        }
+      }
+      explicitSelection.current = false;
+      lock.current = false;
     };
 
     update();
     window.addEventListener("scroll", update, { passive: true });
-    window.addEventListener("resize", update);
+    window.addEventListener("wheel", resumeTracking, { passive: true });
+    window.addEventListener("touchstart", resumeTracking, { passive: true });
+    window.addEventListener("pointerdown", resumeTracking);
+    window.addEventListener("keydown", resumeTracking);
     return () => {
       window.removeEventListener("scroll", update);
-      window.removeEventListener("resize", update);
+      window.removeEventListener("wheel", resumeTracking);
+      window.removeEventListener("touchstart", resumeTracking);
+      window.removeEventListener("pointerdown", resumeTracking);
+      window.removeEventListener("keydown", resumeTracking);
     };
   }, []);
 
