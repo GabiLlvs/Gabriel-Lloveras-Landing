@@ -434,7 +434,6 @@ a:hover {
   border: 1px solid var(--line);
   border-top: 2px solid var(--accent);
   border-radius: var(--radius);
-  scroll-margin-top: calc(var(--sticky-offset) + 12px);
 }
 
 .term-chrome {
@@ -698,7 +697,6 @@ kbd {
   background: var(--bg-raised);
   border: 1px solid var(--line);
   border-radius: var(--radius);
-  scroll-margin-top: calc(var(--sticky-offset) + 12px);
 }
 
 .panel-head {
@@ -744,10 +742,6 @@ kbd {
 
 .project-entry + .project-entry {
   margin-top: 20px;
-}
-
-.project-entry {
-  scroll-margin-top: calc(var(--sticky-offset) + 12px);
 }
 
 .project-entry h3 {
@@ -864,7 +858,6 @@ kbd {
 
 .repo {
   border-top: 1px solid var(--line);
-  scroll-margin-top: calc(var(--sticky-offset) + 12px);
 }
 
 .repo:first-child {

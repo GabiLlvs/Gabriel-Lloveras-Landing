@@ -95,9 +95,15 @@ export function Shell({ children }: ShellProps) {
 
     const target = document.getElementById(pending.destination);
     if (!target) return;
-    const margin = Number.parseFloat(getComputedStyle(target).scrollMarginTop);
-    const aligned =
-      Number.isFinite(margin) && Math.abs(target.getBoundingClientRect().top - margin) <= 2;
+    const targetStyle = getComputedStyle(target);
+    const scrollPadding = Number.parseFloat(
+      getComputedStyle(document.documentElement).scrollPaddingTop,
+    );
+    const scrollMargin = Number.parseFloat(targetStyle.scrollMarginTop);
+    const alignedOffset =
+      (Number.isFinite(scrollPadding) ? scrollPadding : 0) +
+      (Number.isFinite(scrollMargin) ? scrollMargin : 0);
+    const aligned = Math.abs(target.getBoundingClientRect().top - alignedOffset) <= 2;
     target.scrollIntoView({ block: "start" });
     if (aligned) window.dispatchEvent(new Event("scrollend"));
     if (!pending.focus) return;
