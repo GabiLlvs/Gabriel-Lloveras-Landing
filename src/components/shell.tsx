@@ -1,16 +1,22 @@
 "use client";
 
-import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { CommandNav } from "@/components/command-nav";
+import { ConsoleDock } from "@/components/console-dock";
 import { StatusBar } from "@/components/status-bar";
 import { Terminal, type LogItem } from "@/components/terminal";
 import { site } from "@/content/site";
 import { useI18n } from "@/components/locale";
 import { resolveCommand } from "@/lib/commands";
+import type { ExecuteCommandOptions } from "@/lib/execute-command";
+import { scrollSessionLogIfNeeded, scrollToTarget } from "@/lib/scroll-to-target";
 
 type ShellProps = {
   children: ReactNode;
 };
+
+const SCROLL_DELAY_MS = 2000;
+const CONSOLE_BUSY_SHORT_MS = 720;
 
 const SECTION_IDS = [
   "session",
@@ -25,24 +31,96 @@ const SECTION_IDS = [
 type PendingScroll = {
   destination: string;
   focus: boolean;
+  hash: string;
+  active?: string;
 };
 
 export function Shell({ children }: ShellProps) {
   const { locale, m } = useI18n();
   const [log, setLog] = useState<LogItem[]>([]);
   const [active, setActive] = useState("session");
+  const [consoleBusy, setConsoleBusy] = useState(false);
   const seq = useRef(0);
   const lock = useRef(false);
   const explicitSelection = useRef(false);
   const pendingScroll = useRef<PendingScroll | null>(null);
+  const scrollDelayTimer = useRef(0);
+  const consoleBusyTimer = useRef(0);
   const scrollGeneration = useRef(0);
 
-  const execute = useCallback((raw: string, options?: { focus?: boolean }) => {
+  const stopConsoleBusy = useCallback(() => {
+    window.clearTimeout(consoleBusyTimer.current);
+    setConsoleBusy(false);
+  }, []);
+
+  const startConsoleBusy = useCallback(
+    (mode: "scroll" | "short") => {
+      window.clearTimeout(consoleBusyTimer.current);
+      setConsoleBusy(true);
+      if (mode === "short") {
+        consoleBusyTimer.current = window.setTimeout(
+          stopConsoleBusy,
+          CONSOLE_BUSY_SHORT_MS,
+        );
+      }
+    },
+    [stopConsoleBusy],
+  );
+
+  const finishPendingScroll = useCallback(() => {
+    const pending = pendingScroll.current;
+    if (!pending) return;
+
+    pendingScroll.current = null;
+    window.history.replaceState(null, "", `#${pending.hash}`);
+
+    scrollGeneration.current += 1;
+    const generation = scrollGeneration.current;
+    lock.current = true;
+    explicitSelection.current = true;
+    if (pending.active) setActive(pending.active);
+
+    const scrolled = scrollToTarget({
+      destination: pending.destination,
+      focus: pending.focus,
+    });
+    if (!scrolled) {
+      lock.current = false;
+      explicitSelection.current = false;
+      stopConsoleBusy();
+      return;
+    }
+
+    stopConsoleBusy();
+
+    let timer = 0;
+    const release = () => {
+      window.removeEventListener("scrollend", release);
+      window.clearTimeout(timer);
+      if (scrollGeneration.current !== generation || !lock.current) return;
+      lock.current = false;
+    };
+    window.addEventListener("scrollend", release);
+    timer = window.setTimeout(release, 3000);
+  }, [stopConsoleBusy]);
+
+  const schedulePendingScroll = useCallback(() => {
+    window.clearTimeout(scrollDelayTimer.current);
+    if (!pendingScroll.current) return;
+    scrollDelayTimer.current = window.setTimeout(() => {
+      finishPendingScroll();
+    }, SCROLL_DELAY_MS);
+  }, [finishPendingScroll]);
+
+  const execute = useCallback((raw: string, options?: ExecuteCommandOptions) => {
     const trimmed = raw.trim();
     if (!trimmed) return;
 
     const result = resolveCommand(trimmed, locale);
     if (result.clear) {
+      window.clearTimeout(scrollDelayTimer.current);
+      pendingScroll.current = null;
+      if (options?.fromConsole) stopConsoleBusy();
       setLog([]);
       return;
     }
@@ -60,63 +138,43 @@ export function Shell({ children }: ShellProps) {
     );
     setLog((current) => [...current, input, ...lines].slice(-80));
 
-    if (!result.scrollTo) return;
-
-    const destination = result.scrollTo;
-    const hash = result.active === "projects" && destination.startsWith("project-")
-      ? "projects"
-      : destination;
-    window.history.replaceState(null, "", `#${hash}`);
-
-    scrollGeneration.current += 1;
-    const generation = scrollGeneration.current;
-    lock.current = true;
-    explicitSelection.current = true;
-    pendingScroll.current = {
-      destination,
-      focus: Boolean(options?.focus),
-    };
-    if (result.active) setActive(result.active);
-
-    let timer = 0;
-    const release = () => {
-      window.removeEventListener("scrollend", release);
-      window.clearTimeout(timer);
-      if (scrollGeneration.current !== generation || !lock.current) return;
-      lock.current = false;
-    };
-    window.addEventListener("scrollend", release);
-    timer = window.setTimeout(release, 3000);
-  }, [locale]);
-
-  useLayoutEffect(() => {
-    const pending = pendingScroll.current;
-    if (!pending) return;
+    window.clearTimeout(scrollDelayTimer.current);
     pendingScroll.current = null;
 
-    const target = document.getElementById(pending.destination);
-    if (!target) {
-      lock.current = false;
-      explicitSelection.current = false;
-      return;
+    if (options?.fromConsole) {
+      startConsoleBusy(result.scrollTo ? "scroll" : "short");
     }
-    const targetStyle = getComputedStyle(target);
-    const scrollPadding = Number.parseFloat(
-      getComputedStyle(document.documentElement).scrollPaddingTop,
-    );
-    const scrollMargin = Number.parseFloat(targetStyle.scrollMarginTop);
-    const alignedOffset =
-      (Number.isFinite(scrollPadding) ? scrollPadding : 0) +
-      (Number.isFinite(scrollMargin) ? scrollMargin : 0);
-    const aligned = Math.abs(target.getBoundingClientRect().top - alignedOffset) <= 2;
-    target.scrollIntoView({ block: "start" });
-    if (aligned) window.dispatchEvent(new Event("scrollend"));
-    if (!pending.focus) return;
-    const heading = target.querySelector("h1, h2, h3");
-    if (heading instanceof HTMLElement) {
-      heading.focus({ preventScroll: true });
+
+    if (result.scrollTo) {
+      const destination = result.scrollTo;
+      const hash =
+        result.active === "projects" && destination.startsWith("project-")
+          ? "projects"
+          : destination;
+      pendingScroll.current = {
+        destination,
+        focus: Boolean(options?.focus),
+        hash,
+        active: result.active,
+      };
+      if (options?.fromConsole) {
+        schedulePendingScroll();
+      } else {
+        finishPendingScroll();
+      }
     }
-  }, [log]);
+
+    if (lines.length > 0 && !result.scrollTo && options?.fromConsole) {
+      window.requestAnimationFrame(() => scrollSessionLogIfNeeded());
+    }
+  }, [finishPendingScroll, schedulePendingScroll, locale, startConsoleBusy, stopConsoleBusy]);
+
+  useEffect(() => {
+    return () => {
+      window.clearTimeout(scrollDelayTimer.current);
+      window.clearTimeout(consoleBusyTimer.current);
+    };
+  }, []);
 
   const select = useCallback(
     (command: string) => {
@@ -169,6 +227,13 @@ export function Shell({ children }: ShellProps) {
       }
       if (event.type === "pointerdown") {
         const pointer = event as PointerEvent;
+        const target = pointer.target;
+        if (
+          target instanceof HTMLElement &&
+          target.closest(".console-dock, input, textarea, select, button, a")
+        ) {
+          return;
+        }
         if (pointer.clientX < window.innerWidth - 16 && pointer.clientY < window.innerHeight - 16) {
           return;
         }
@@ -197,10 +262,11 @@ export function Shell({ children }: ShellProps) {
       <a className="skip" href="#contenido">
         {m.skip}
       </a>
-      <StatusBar onExecute={execute} />
+      <StatusBar />
       <div className="workspace">
         <CommandNav active={active} onSelect={select} />
         <main id="contenido" className="main" tabIndex={-1}>
+          <ConsoleDock onExecute={execute} busy={consoleBusy} />
           <Terminal log={log} onExecute={execute} />
           {children}
           <footer className="colophon">

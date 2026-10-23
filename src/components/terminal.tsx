@@ -1,7 +1,9 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { HelpReveal, TypedLogText } from "@/components/log-reveal";
 import { useI18n } from "@/components/locale";
+import type { ExecuteCommand } from "@/lib/execute-command";
 import { profile } from "@/content/profile";
 import { site } from "@/content/site";
 
@@ -13,7 +15,7 @@ export type LogItem =
 
 type TerminalProps = {
   log: LogItem[];
-  onExecute: (command: string, options?: { focus?: boolean }) => void;
+  onExecute: ExecuteCommand;
 };
 
 function Portrait() {
@@ -33,6 +35,12 @@ export function Terminal({ log, onExecute }: TerminalProps) {
     const node = logRef.current;
     if (!node) return;
     node.scrollTop = node.scrollHeight;
+
+    const observer = new ResizeObserver(() => {
+      node.scrollTop = node.scrollHeight;
+    });
+    observer.observe(node);
+    return () => observer.disconnect();
   }, [log]);
 
   return (
@@ -111,33 +119,7 @@ export function Terminal({ log, onExecute }: TerminalProps) {
         >
           {log.map((line) => {
             if (line.kind === "help") {
-              return (
-                <div key={line.id} className="help">
-                  <p>{m.helpTitle}</p>
-                  <ul>
-                    {m.help.map((entry) => (
-                      <li key={entry.command}>
-                        {entry.run ? (
-                          <button
-                            type="button"
-                            onClick={() => {
-                              if (entry.run) onExecute(entry.run);
-                            }}
-                          >
-                            {entry.command}
-                          </button>
-                        ) : (
-                          <span className="help-cmd">{entry.command}</span>
-                        )}
-                        <span>{entry.hint}</span>
-                      </li>
-                    ))}
-                  </ul>
-                  <p className="help-note">
-                    {m.helpNote}
-                  </p>
-                </div>
-              );
+              return <HelpReveal key={line.id} onExecute={onExecute} />;
             }
 
             if (line.kind === "input") {
@@ -152,27 +134,14 @@ export function Terminal({ log, onExecute }: TerminalProps) {
             }
 
             return (
-              <p key={line.id} className={line.kind === "error" ? "log-error" : "log-text"}>
-                {line.text}
-              </p>
+              <TypedLogText
+                key={line.id}
+                text={line.text}
+                className={line.kind === "error" ? "log-error" : "log-text"}
+              />
             );
           })}
         </div>
-        <p className="term-hint">
-          <span className="hint-group">
-            <kbd>↑</kbd>
-            <kbd>↓</kbd>
-            {m.history}
-          </span>
-          <span className="hint-group">
-            <kbd>tab</kbd>
-            {m.complete}
-          </span>
-          <span className="hint-group">
-            <kbd>help</kbd>
-            {m.commands}
-          </span>
-        </p>
       </div>
     </article>
   );

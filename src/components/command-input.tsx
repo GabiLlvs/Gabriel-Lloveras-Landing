@@ -2,12 +2,16 @@
 
 import { useRef, useState, type KeyboardEvent } from "react";
 import { completeCommand } from "@/lib/commands";
+import { PixelLoader } from "@/components/pixel-loader";
+import type { ExecuteCommand } from "@/lib/execute-command";
 import { useI18n } from "@/components/locale";
 
 export function CommandInput({
   onExecute,
+  busy = false,
 }: {
-  onExecute: (command: string) => void;
+  onExecute: ExecuteCommand;
+  busy?: boolean;
 }) {
   const { m } = useI18n();
   const [value, setValue] = useState("");
@@ -16,13 +20,14 @@ export function CommandInput({
   const draft = useRef("");
 
   function submit(command: string) {
+    if (busy) return;
     const trimmed = command.trim();
     if (!trimmed) return;
     setHistory((current) => [...current, trimmed]);
     setCursor(-1);
     draft.current = "";
     setValue("");
-    onExecute(trimmed);
+    onExecute(trimmed, { fromConsole: true });
   }
 
   function onKeyDown(event: KeyboardEvent<HTMLInputElement>) {
@@ -59,6 +64,7 @@ export function CommandInput({
 
     if (event.key === "Enter") {
       event.preventDefault();
+      if (busy) return;
       submit(event.currentTarget.value);
       return;
     }
@@ -67,38 +73,49 @@ export function CommandInput({
       event.preventDefault();
       setValue("");
       setCursor(-1);
-      onExecute("clear");
+      onExecute("clear", { fromConsole: true });
     }
   }
 
   return (
     <form
-      className="command-form"
+      className="term-form"
       aria-label={m.terminalForm}
+      aria-busy={busy}
       onSubmit={(event) => {
         event.preventDefault();
         submit(value);
       }}
     >
-      <div className="command-entry">
+      <label htmlFor="terminal-command" className="sr-only">
+        {m.commandInput}
+      </label>
+      <div className={busy ? "term-entry is-busy" : "term-entry"}>
         <span className="prompt-mark" aria-hidden="true">
           $
         </span>
-        <input
-          aria-label={m.commandInput}
-          className="command-input"
-          value={value}
-          onChange={(event) => {
-            setValue(event.target.value);
-            setCursor(-1);
-          }}
-          onKeyDown={onKeyDown}
-          autoCapitalize="none"
-          autoCorrect="off"
-          autoComplete="off"
-          spellCheck={false}
-          enterKeyHint="go"
-        />
+        <span className="term-field">
+          <input
+            id="terminal-command"
+            aria-label={m.commandInput}
+            className="term-input"
+            value={value}
+            onChange={(event) => {
+              setValue(event.target.value);
+              setCursor(-1);
+            }}
+            onKeyDown={onKeyDown}
+            autoCapitalize="none"
+            autoCorrect="off"
+            autoComplete="off"
+            spellCheck={false}
+            enterKeyHint="go"
+            placeholder={m.commandPlaceholder}
+            disabled={busy}
+            readOnly={busy}
+          />
+          {busy ? <PixelLoader /> : null}
+        </span>
       </div>
       <button type="submit" className="sr-only">
         {m.run}
